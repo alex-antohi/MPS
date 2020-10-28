@@ -1,8 +1,8 @@
 # MPS
 
-Antohi Alexandru 343C5 - dezvoltator
-Sevastre Anca 343C5 - manager, technical writer
-Ana-Maria PĂDURARU 343C5 - tester, analist
+Antohi Alexandru 343C5 - dezvoltator |
+Sevastre Anca 343C5 - manager, technical writer |
+Ana-Maria PĂDURARU 343C5 - tester, analist |
 Ștefan-Lucian STANCIU 343C5 - dezvoltator
 
 
