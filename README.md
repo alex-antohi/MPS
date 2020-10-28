@@ -11,4 +11,4 @@ Sistem de inferență a șansei de infectare cu COVID folosind:
   - un model de invățare automată supravegheată utilizând setul de date
 
 
-Wiki: https://en.wikipedia.org/wiki/User:Stefan.stanciu1504/sandbox
+Wiki: https://en.wikipedia.org/wiki/User:Stefan.stanciu1504/sandbox#Descriere_cerinta%3A
