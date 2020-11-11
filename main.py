@@ -4,7 +4,8 @@
 import math
 from datetime import datetime
 import pandas as pd
-
+import re
+from texttable import Texttable
 
 class Patient:
     def __init__(self, sex, varsta, data_simpt, simpt_decl,
@@ -27,8 +28,10 @@ class Patient:
         # df = pd.read_excel(r'C:\Users\alexa\PycharmProjects\pythonProject\mps.dataset.xlsx')
         df = pd.read_excel('mps.dataset.xlsx')
         df = pd.DataFrame(df, columns=df.columns)
-        for i in df.index:
 
+        t = Texttable()
+
+        for i in df.index:
             # codificare instituția sursă
             if isinstance(df['instituția sursă'][i], str):
                 if 'X' in df['instituția sursă'][i].upper():
@@ -38,7 +41,7 @@ class Patient:
                 elif 'Z' in df['instituția sursă'][i].upper():
                     df['instituția sursă'][i] = 2
             else:
-                df['sex'][i] = -1
+                df['instituția sursă'][i] = -1
 
             # codificare sex
             if isinstance(df['sex'][i], str):
@@ -47,52 +50,128 @@ class Patient:
                 elif 'FEMININ' in df['sex'][i].upper() or 'F' in df['sex'][i].upper():
                     df['sex'][i] = 1
                 else:
+                    # exceptii
                     print(df['sex'][i], i)
             else:
                 df['sex'][i] = -1
 
             # codificare varsta
             if isinstance(df['vârstă'][i], int):
-                df['vârstă'][i] = float(df['vârstă'][i])
+                df['vârstă'][i] = int(df['vârstă'][i])
             elif isinstance(df['vârstă'][i], str):
                 if df['vârstă'][i].isdecimal():
-                    df['vârstă'][i] = float(df['vârstă'][i])
+                    df['vârstă'][i] = int(df['vârstă'][i])
                 else:
                     if 'ANI' in df['vârstă'][i].upper():
                         df['vârstă'][i] = df['vârstă'][i].upper().replace(' ANI', '')
                         if df['vârstă'][i].isdecimal():
-                            df['vârstă'][i] = float(df['vârstă'][i])
+                            df['vârstă'][i] = int(df['vârstă'][i])
                         elif 'LUN' in df['vârstă'][i].upper():
                             df['vârstă'][i] = df['vârstă'][i].upper().replace(' LUNA', '')
                             df['vârstă'][i] = df['vârstă'][i].upper().replace(' LUNI', '')
                             df['vârstă'][i] = df['vârstă'][i].upper().replace('LUNA', '')
                             df['vârstă'][i] = df['vârstă'][i].upper().replace('LUNI', '')
-                            df['vârstă'][i] = float(df['vârstă'][i].split(' ')[0]) +\
-                                float(df['vârstă'][i].split(' ')[1]) / 12
+                            df['vârstă'][i] = int(df['vârstă'][i].split(' ')[0])
+                             #   + int(df['vârstă'][i].split(' ')[1]) / 12
                     elif 'LUN' in df['vârstă'][i].upper():
                         df['vârstă'][i] = df['vârstă'][i].upper().replace(' LUNA', '')
                         df['vârstă'][i] = df['vârstă'][i].upper().replace(' LUNI', '')
                         df['vârstă'][i] = df['vârstă'][i].upper().replace('LUNA', '')
                         df['vârstă'][i] = df['vârstă'][i].upper().replace('LUNI', '')
                         if df['vârstă'][i].isdecimal():
-                            df['vârstă'][i] = float(df['vârstă'][i])
+                            df['vârstă'][i] = int(df['vârstă'][i])
                         else:
                             df['vârstă'][i] = df['vârstă'][i].upper().replace(' ', '')
                             if df['vârstă'][i].isdecimal():
-                                df['vârstă'][i] = float(df['vârstă'][i])
-                    # valori neabordate : nou nascut / 1 zi etc.
-                    # else:
-                    #    print(df['vârstă'][i], i)
+                                df['vârstă'][i] = int(df['vârstă'][i])
+                    else:
+                        # exceptii
+                        # print(df['vârstă'][i], i)
+                        df['vârstă'][i] = 0
+            else:
+                if math.isnan(df['vârstă'][i]):
+                    df['vârstă'][i] = -1
 
             # codificare dată debut simptome declarate ca numarul zilei din an
             if isinstance(df['dată debut simptome declarate'][i], datetime):
-                df['dată debut simptome declarate'][i] = float(df['dată debut simptome declarate'][i].strftime("%j"))
+                # print(df['dată debut simptome declarate'][i])
+                df['dată debut simptome declarate'][i] = int(df['dată debut simptome declarate'][i].strftime("%j"))
             elif isinstance(df['dată debut simptome declarate'][i], str):
                 if 'NU' in df['dată debut simptome declarate'][i].upper() or\
                         '-' in df['dată debut simptome declarate'][i]:
                     df['dată debut simptome declarate'][i] = -1
                 else:
-                    print(df['dată debut simptome declarate'][i])
+                    df['dată debut simptome declarate'][i] = df['dată debut simptome declarate'][i].replace(' ', '-')
+                    df['dată debut simptome declarate'][i] = df['dată debut simptome declarate'][i].replace('.', '-')
+                    df['dată debut simptome declarate'][i] = df['dată debut simptome declarate'][i].replace(',', '-')
+
+                    if re.match("(\d+)-(\d+)-(\d\d\d\d)$", df['dată debut simptome declarate'][i]):
+                        df['dată debut simptome declarate'][i] = datetime.strptime(df['dată debut simptome declarate'][i], '%d-%m-%Y')
+                        df['dată debut simptome declarate'][i] = int(df['dată debut simptome declarate'][i].strftime("%j"))
+                    else:
+                        # exceptii nerezolvate
+                        df['dată debut simptome declarate'][i] = 0
+                        # print(df['dată debut simptome declarate'][i])
             else:
                 if math.isnan(df['dată debut simptome declarate'][i]):
                     df['dată debut simptome declarate'][i] = -1
+
+            # codificare dată internare ca numarul zilei din an
+            if isinstance(df['dată internare'][i], datetime):
+                # print(df['dată internare'][i])
+                df['dată internare'][i] = int(df['dată internare'][i].strftime("%j"))
+            elif isinstance(df['dată internare'][i], str):
+                if 'NU' in df['dată internare'][i].upper() or\
+                        '-' in df['dată internare'][i]:
+                    df['dată internare'][i] = -1
+                else:
+                    df['dată internare'][i] = df['dată internare'][i].replace(' ', '-')
+                    df['dată internare'][i] = df['dată internare'][i].replace('.', '-')
+                    df['dată internare'][i] = df['dată internare'][i].replace(',', '-')
+
+                    if re.match("(\d+)-(\d+)-(\d\d\d\d)$", df['dată internare'][i]):
+                        df['dată internare'][i] = datetime.strptime(df['dată internare'][i], '%d-%m-%Y')
+                        df['dată internare'][i] = int(df['dată internare'][i].strftime("%j"))
+                    else:
+                        # exceptii nerezolvate
+                        df['dată internare'][i] = 0
+                        # print(df['dată internare'][i])
+            else:
+                if math.isnan(df['dată internare'][i]):
+                    df['dată internare'][i] = -1
+
+            # codificare dată rezultat testare ca numarul zilei din an
+            if isinstance(df['data rezultat testare'][i], datetime):
+                # print(df['data rezultat testare'][i])
+                df['data rezultat testare'][i] = int(df['data rezultat testare'][i].strftime("%j"))
+            elif isinstance(df['data rezultat testare'][i], str):
+                if 'NU' in df['data rezultat testare'][i].upper() or\
+                        '-' in df['data rezultat testare'][i]:
+                    df['data rezultat testare'][i] = -1
+                else:
+                    df['data rezultat testare'][i] = df['data rezultat testare'][i].replace(' ', '-')
+                    df['data rezultat testare'][i] = df['data rezultat testare'][i].replace('.', '-')
+                    df['data rezultat testare'][i] = df['data rezultat testare'][i].replace(',', '-')
+
+                    if re.match("(\d+)-(\d+)-(\d\d\d\d)$", df['data rezultat testare'][i]):
+                        df['data rezultat testare'][i] = datetime.strptime(df['data rezultat testare'][i], '%d-%m-%Y')
+                        df['data rezultat testare'][i] = int(df['data rezultat testare'][i].strftime("%j"))
+                    else:
+                        # exceptii nerezolvate
+                        # print(df['data rezultat testare'][i])
+                        df['data rezultat testare'][i] = 0
+            else:
+                if math.isnan(df['data rezultat testare'][i]):
+                    df['data rezultat testare'][i] = -1
+            # print(df['instituția sursă'][i], df['sex'][i], df['vârstă'][i], df['dată debut simptome declarate'][i], df['dată internare'][i], df['data rezultat testare'][i])
+
+    #verific ca toate valorile sa fie int-uri
+    for i in df.index:
+        if not isinstance(df['instituția sursă'][i], int) or\
+                not isinstance(df['sex'][i], int) or\
+                not isinstance(df['vârstă'][i], int) or\
+                not isinstance(df['dată debut simptome declarate'][i], int) or\
+                not isinstance(df['dată internare'][i], int) or\
+                not isinstance(df['data rezultat testare'][i], int):
+            print(i, df['instituția sursă'][i], df['sex'][i], df['vârstă'][i], df['dată debut simptome declarate'][i],
+                  df['dată internare'][i], df['data rezultat testare'][i])
