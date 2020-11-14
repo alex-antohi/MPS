@@ -1,12 +1,28 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
-import math
-from datetime import datetime
-import pandas as pd
-import re
-from texttable import Texttable
+from warnings import simplefilter
+simplefilter(action='ignore', category=FutureWarning)
 
+import math
+import pandas as pd
+from datetime import datetime
+from pandas import read_csv
+import re
+import numpy as np
+import sklearn
+
+from sklearn import svm
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+from autosklearn.regression import AutoSklearnRegressor
+from autosklearn.metrics import mean_absolute_error as auto_mean_absolute_error
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.multiclass import OneVsOneClassifier
+from sklearn.multiclass import OneVsOneClassifier
+from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import cross_validate
 
 class Patient:
     def __init__(self, sex, varsta, data_simpt, simpt_decl,
@@ -26,13 +42,12 @@ class Patient:
         self.rez = rez
 
     if __name__ == '__main__':
-        # df = pd.read_excel(r'C:\Users\alexa\PycharmProjects\pythonProject\mps.dataset.xlsx')
         df = pd.read_excel('mps.dataset.xlsx')
         df = pd.DataFrame(df, columns=df.columns)
-
-        t = Texttable()
-
-        for i in df.index:
+        
+        # df.index
+        nrRows = 1000
+        for i in range(nrRows):
             # codificare instituția sursă
             if isinstance(df['instituția sursă'][i], str):
                 if 'X' in df['instituția sursă'][i].upper():
@@ -228,8 +243,29 @@ class Patient:
             elif df['confirmare contact cu o persoană infectată'][i] == 1:
                 df['confirmare contact cu o persoană infectată'][i] = 1
 
+            # codificare simptome declarate
+            df['simptome declarate'][i] = 69
+
+            # codificare simptome raportate la internare
+            df['simptome raportate la internare'][i] = 69
+
+            # codificare diagnostic și semne de internare
+            df['diagnostic și semne de internare'][i] = 69
+
+            # codificare coloana rezultate
+            if isinstance(df['rezultat testare'][i], str):
+                if re.match("( *)NEGATIV( *)", df['rezultat testare'][i].upper()):
+                    df['rezultat testare'][i] = 0
+                elif re.match("( *)POZITIV( *)", df['rezultat testare'][i].upper()):
+                    df['rezultat testare'][i] = 1
+                else:
+                    df['rezultat testare'][i] = -1
+
+            elif math.isnan(df['rezultat testare'][i]):
+                df['rezultat testare'][i] = 0
+
         # verific ca toate valorile sa fie int-uri
-        for i in df.index:
+        for i in range(nrRows):
             if not isinstance(df['instituția sursă'][i], int) or\
                     not isinstance(df['sex'][i], int) or\
                     not isinstance(df['vârstă'][i], int) or\
@@ -238,10 +274,72 @@ class Patient:
                     not isinstance(df['data rezultat testare'][i], int) or\
                     not isinstance(df['istoric de călătorie'][i], int) or\
                     not isinstance(df['mijloace de transport folosite'][i], int) or\
-                    not isinstance(df['confirmare contact cu o persoană infectată'][i], int):
+                    not isinstance(df['confirmare contact cu o persoană infectată'][i], int) or\
+                    not isinstance(df['simptome declarate'][i], int) or \
+                    not isinstance(df['simptome raportate la internare'][i], int) or \
+                    not isinstance(df['diagnostic și semne de internare'][i], int) or \
+                    not isinstance(df['rezultat testare'][i], int):
                 print(i, df['instituția sursă'][i], df['sex'][i], df['vârstă'][i],
                       df['dată debut simptome declarate'][i],
                       df['dată internare'][i], df['data rezultat testare'][i],
                       df['istoric de călătorie'][i],
                       df['mijloace de transport folosite'][i],
-                      df['confirmare contact cu o persoană infectată'][i])
+                      df['confirmare contact cu o persoană infectată'][i],
+                      df['simptome declarate'][i],
+                      df['simptome raportate la internare'][i],
+                      df['diagnostic și semne de internare'][i],
+                      df['rezultat testare'][i])
+                      
+        df.to_csv('dfexport.csv', encoding='utf-8', index=False, header=None)
+
+        cols = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ,11]
+        Xframe = read_csv('dfexport.csv', header=None, usecols=cols, nrows=nrRows)
+        X = Xframe.values
+        X = X.astype('int')
+        
+        cols = [12]
+        yframe = read_csv('dfexport.csv', header=None, usecols=cols, nrows=nrRows)
+        y = yframe.values
+        y = y.astype('int')
+        y = np.concatenate(y, axis=0)
+        
+        
+        X_train, X_test = np.array_split(X, [int(df.index.stop * 0.8)])
+        X_antrenare = np.array_split(X_train, [int(X_train.size/12 * 0.7)])[0]
+        X_validare = np.array_split(X_train, [int(X_train.size/12 * 0.3)])[1]
+        
+        y_train, y_test = np.array_split(y, [int(df.index.stop * 0.8)])
+        y_antrenare = np.array_split(y_train, [int(y_train.size * 0.7)])[0]
+        y_validare = np.array_split(y_train, [int(y_train.size * 0.3)])[1]
+        
+             
+        model = OneVsRestClassifier(svm.SVC()).fit(X_antrenare, y_antrenare)
+        out_validare = model.predict(X_validare)
+        TP, FP, TN, FN = 0, 0, 0, 0
+        for i in range(out_validare.size):
+                if out_validare[i] == y_validare[i]:
+                        if (out_validare[i] == 0):
+                                TN += 1
+                        if (out_validare[i] == 1):
+                                TP += 1
+                else:
+                        if (out_validare[i] == 0):
+                                FN += 1
+                        if (out_validare[i] == 1):
+                                FP += 1
+        
+        acuratete = (TP + TN) / (TP + FP + TN + FN)
+        print('ACURATETE = ', "{:.1f}".format(acuratete))
+        
+        precizie = TP / (TP + FP)
+        print('PRECIZIE = ', "{:.1f}".format(precizie))
+        
+        rapel = TP / (TP + FN)
+        print('RAPEL = ', "{:.1f}".format(rapel))
+        
+        scorF1 = (2 * precizie * rapel) / (precizie + rapel)
+        print('SCORUL F1 = ', "{:.1f}".format(scorF1))
+        
+        mat_conf = [[TN, FP], [FN, TP]]
+        print(mat_conf)
+
