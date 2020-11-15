@@ -1,29 +1,27 @@
+# Press Shift+F10 to execute it or replace it with your code.
+# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+
 import math
+import sys
 from datetime import datetime
 import pandas as pd
 import re
+import numpy as np
+from sklearn.preprocessing import MultiLabelBinarizer
+
+np.set_printoptions(threshold=sys.maxsize)
+pd.options.display.max_columns = None
+pd.options.display.max_rows = None
 
 
-class Patient:
-    def __init__(self, sex, varsta, data_simpt, simpt_decl,
-                 data_internare, simpt_rap, diagnostic, calatorii, mij_trans,
-                 contact, data_rez, rez):
-        self.sex = sex
-        self.varsta = varsta
-        self. data_simpt = data_simpt
-        self.simpt_decl = simpt_decl
-        self.data_internare = data_internare
-        self.simpt_rap = simpt_rap
-        self.diagnostic = diagnostic
-        self.calatorii = calatorii
-        self.mij_trans = mij_trans
-        self.contact = contact
-        self.data_rez = data_rez
-        self.rez = rez
-
-if __name__ == '__main__':
-    df = pd.read_excel('mps.dataset.xlsx')
+def encode(file_name):
+    df = pd.read_excel(file_name)
     df = pd.DataFrame(df, columns=df.columns)
+
+    # replacing nan
+    df['simptome declarate'] = df['simptome declarate'].replace(np.nan, 0)
+    df['simptome raportate la internare'] = df['simptome raportate la internare'].replace(np.nan, 0)
+    df['diagnostic și semne de internare'] = df['diagnostic și semne de internare'].replace(np.nan, 0)
 
     for i in df.index:
         # codificare instituția sursă
@@ -36,18 +34,6 @@ if __name__ == '__main__':
                 df['instituția sursă'][i] = 2
         else:
             df['instituția sursă'][i] = -1
-
-
-        # codificare rezultat testare:
-        if isinstance(df['rezultat testare'][i], str):
-            if 'POZITIV' in df['rezultat testare'][i].upper():
-                df['rezultat testare'][i] = 0
-            elif 'NEGATIV' in df['rezultat testare'][i].upper():
-                df['rezultat testare'][i] = 1
-            elif 'NECONCLUDENT' in df['rezultat testare'][i].upper():
-                df['rezultat testare'][i] = 2
-        else:
-            df['rezultat testare'][i] = -1
 
         # codificare sex
         if isinstance(df['sex'][i], str):
@@ -78,7 +64,6 @@ if __name__ == '__main__':
                         df['vârstă'][i] = df['vârstă'][i].upper().replace('LUNA', '')
                         df['vârstă'][i] = df['vârstă'][i].upper().replace('LUNI', '')
                         df['vârstă'][i] = int(df['vârstă'][i].split(' ')[0])
-                        #   + int(df['vârstă'][i].split(' ')[1]) / 12
                 elif 'LUN' in df['vârstă'][i].upper():
                     df['vârstă'][i] = df['vârstă'][i].upper().replace(' LUNA', '')
                     df['vârstă'][i] = df['vârstă'][i].upper().replace(' LUNI', '')
@@ -91,8 +76,6 @@ if __name__ == '__main__':
                         if df['vârstă'][i].isdecimal():
                             df['vârstă'][i] = int(df['vârstă'][i])
                 else:
-                    # exceptii
-                    # print(df['vârstă'][i], i)
                     df['vârstă'][i] = 0
         else:
             if math.isnan(df['vârstă'][i]):
@@ -103,7 +86,7 @@ if __name__ == '__main__':
             # print(df['dată debut simptome declarate'][i])
             df['dată debut simptome declarate'][i] = int(df['dată debut simptome declarate'][i].strftime("%j"))
         elif isinstance(df['dată debut simptome declarate'][i], str):
-            if 'NU' in df['dată debut simptome declarate'][i].upper() or\
+            if 'NU' in df['dată debut simptome declarate'][i].upper() or \
                     '-' in df['dată debut simptome declarate'][i]:
                 df['dată debut simptome declarate'][i] = -1
             else:
@@ -119,7 +102,7 @@ if __name__ == '__main__':
                 else:
                     # exceptii nerezolvate
                     df['dată debut simptome declarate'][i] = 0
-                    # print(df['dată debut simptome declarate'][i])
+                # print(df['dată debut simptome declarate'][i])
         else:
             if math.isnan(df['dată debut simptome declarate'][i]):
                 df['dată debut simptome declarate'][i] = -1
@@ -129,7 +112,7 @@ if __name__ == '__main__':
             # print(df['dată internare'][i])
             df['dată internare'][i] = int(df['dată internare'][i].strftime("%j"))
         elif isinstance(df['dată internare'][i], str):
-            if 'NU' in df['dată internare'][i].upper() or\
+            if 'NU' in df['dată internare'][i].upper() or \
                     '-' in df['dată internare'][i]:
                 df['dată internare'][i] = -1
             else:
@@ -143,7 +126,7 @@ if __name__ == '__main__':
                 else:
                     # exceptii nerezolvate
                     df['dată internare'][i] = 0
-                    # print(df['dată internare'][i])
+                # print(df['dată internare'][i])
         else:
             if math.isnan(df['dată internare'][i]):
                 df['dată internare'][i] = -1
@@ -153,7 +136,7 @@ if __name__ == '__main__':
             # print(df['data rezultat testare'][i])
             df['data rezultat testare'][i] = int(df['data rezultat testare'][i].strftime("%j"))
         elif isinstance(df['data rezultat testare'][i], str):
-            if 'NU' in df['data rezultat testare'][i].upper() or\
+            if 'NU' in df['data rezultat testare'][i].upper() or \
                     '-' in df['data rezultat testare'][i]:
                 df['data rezultat testare'][i] = -1
             else:
@@ -171,8 +154,7 @@ if __name__ == '__main__':
         else:
             if math.isnan(df['data rezultat testare'][i]):
                 df['data rezultat testare'][i] = -1
-        # print(df['instituția sursă'][i], df['sex'][i], df['vârstă'][i],
-        # df['dată debut simptome declarate'][i], df['dată internare'][i], df['data rezultat testare'][i])
+
 
         # codificare istoric calatorii
         if isinstance(df['istoric de călătorie'][i], str):
@@ -233,20 +215,84 @@ if __name__ == '__main__':
         elif df['confirmare contact cu o persoană infectată'][i] == 1:
             df['confirmare contact cu o persoană infectată'][i] = 1
 
+        # codificare simptome
+        if isinstance(df['simptome declarate'][i], str):
+            if re.match("( *)ASIMPTOMATIC( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)NU( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)FARA( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)ABSENTE( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)AFEBRIL( *)", df['simptome declarate'][i].upper()):
+                df['simptome declarate'][i] = 0
+            elif re.match("( *)TUS( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)DIAREE( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)OBOSEALA( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)DISP( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)RESPIRAT( *)", df['simptome declarate'][i].upper()) or \
+                    re.match("( *)FEBRA( *)", df['simptome declarate'][i]):
+                df['simptome declarate'][i] = 1
+            else:
+                df['simptome declarate'][i] = -1
+
+        # codificare simptome
+        if isinstance(df['simptome raportate la internare'][i], str):
+            if re.match("( *)ASIM( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)NU( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)FARA( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)ABSENTE( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)AFEBRIL( *)", df['simptome raportate la internare'][i].upper()):
+                df['simptome raportate la internare'][i] = 0
+            elif re.match("( *)TUS( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)DIAREE( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)OBOSEALA( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)DISP( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)INSUF( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)PIERDERE( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)RESPIRAT( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)FEBRA( *)", df['simptome raportate la internare'][i]):
+                df['simptome raportate la internare'][i] = 1
+            else:
+                df['simptome raportate la internare'][i] = -1
+
+
+        # codificare simptome
+        if isinstance(df['simptome raportate la internare'][i], str):
+            if re.match("( *)ASIM( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)NU( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)FARA( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)ABSENTE( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)AFEBRIL( *)", df['simptome raportate la internare'][i].upper()):
+                df['simptome raportate la internare'][i] = 0
+            elif re.match("( *)TUS( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)DIAREE( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)OBOSEALA( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)DISP( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)INSUF( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)PIERDERE( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)RESP( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)COV( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)SARS( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)SUSP( *)", df['simptome raportate la internare'][i].upper()) or \
+                    re.match("( *)FEBRA( *)", df['simptome raportate la internare'][i]):
+                df['simptome raportate la internare'][i] = 1
+            else:
+                df['simptome raportate la internare'][i] = -1
+
     # verific ca toate valorile sa fie int-uri
     for i in df.index:
-        if not isinstance(df['instituția sursă'][i], int) or\
-                not isinstance(df['sex'][i], int) or\
-                not isinstance(df['vârstă'][i], int) or\
-                not isinstance(df['dată debut simptome declarate'][i], int) or\
-                not isinstance(df['dată internare'][i], int) or\
-                not isinstance(df['data rezultat testare'][i], int) or\
-                not isinstance(df['istoric de călătorie'][i], int) or\
-                not isinstance(df['mijloace de transport folosite'][i], int) or\
+        if not isinstance(df['instituția sursă'][i], int) or \
+                not isinstance(df['sex'][i], int) or \
+                not isinstance(df['vârstă'][i], int) or \
+                not isinstance(df['dată debut simptome declarate'][i], int) or \
+                not isinstance(df['dată internare'][i], int) or \
+                not isinstance(df['data rezultat testare'][i], int) or \
+                not isinstance(df['istoric de călătorie'][i], int) or \
+                not isinstance(df['mijloace de transport folosite'][i], int) or \
                 not isinstance(df['confirmare contact cu o persoană infectată'][i], int):
             print(i, df['instituția sursă'][i], df['sex'][i], df['vârstă'][i],
-                    df['dată debut simptome declarate'][i],
-                    df['dată internare'][i], df['data rezultat testare'][i],
-                    df['istoric de călătorie'][i],
-                    df['mijloace de transport folosite'][i],
-                    df['confirmare contact cu o persoană infectată'][i])
+                  df['dată debut simptome declarate'][i],
+                  df['dată internare'][i], df['data rezultat testare'][i],
+                  df['istoric de călătorie'][i],
+                  df['mijloace de transport folosite'][i],
+                  df['confirmare contact cu o persoană infectată'][i])
+
+    return 'Uneori este greu, alteori nu este usor.'
