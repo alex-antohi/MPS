@@ -57,6 +57,8 @@ def encode(file):
                 df['instituția sursă'][i] = 1
             elif 'Z' in df['instituția sursă'][i].upper():
                 df['instituția sursă'][i] = 2
+            else:
+                df['instituția sursă'][i] = -1
         else:
             df['instituția sursă'][i] = -1
 
@@ -68,7 +70,7 @@ def encode(file):
                 df['sex'][i] = 1
             else:
                 # exceptii
-                print(df['sex'][i], i)
+                df['sex'][i] = -1
         else:
             df['sex'][i] = -1
 
@@ -88,7 +90,10 @@ def encode(file):
                         df['vârstă'][i] = df['vârstă'][i].upper().replace(' LUNI', '')
                         df['vârstă'][i] = df['vârstă'][i].upper().replace('LUNA', '')
                         df['vârstă'][i] = df['vârstă'][i].upper().replace('LUNI', '')
-                        df['vârstă'][i] = int(df['vârstă'][i].split(' ')[0])
+                        if df['vârstă'][i].isdecimal():
+                            df['vârstă'][i] = int(df['vârstă'][i].split(' ')[0])
+                        else:
+                            df['vârstă'][i] = -1;
                         #   + int(df['vârstă'][i].split(' ')[1]) / 12
                 elif 'LUN' in df['vârstă'][i].upper():
                     df['vârstă'][i] = df['vârstă'][i].upper().replace(' LUNA', '')
@@ -101,9 +106,13 @@ def encode(file):
                         df['vârstă'][i] = df['vârstă'][i].upper().replace(' ', '')
                         if df['vârstă'][i].isdecimal():
                             df['vârstă'][i] = int(df['vârstă'][i])
+                        else:
+                            df['vârstă'][i] = -1
                 else:
                     # exceptii
                     df['vârstă'][i] = 0
+        else:
+            df['vârstă'] = -1
 
         # codificare dată debut simptome declarate ca numarul zilei din an
         if isinstance(df['dată debut simptome declarate'][i], datetime):
@@ -366,7 +375,10 @@ def encode(file):
     rapel = TP / (TP + FN)
     output_string += 'Rapel_v = ' + "{:.1f}".format(rapel) + "\n"
 
-    scorF1 = (2 * precizie * rapel) / (precizie + rapel)
+    if precizie + rapel == 0:
+        scorF1 = 0
+    else:
+        scorF1 = (2 * precizie * rapel) / (precizie + rapel)
     output_string += 'ScorF1_v = ' + "{:.1f}".format(scorF1) + "\n"
 
     mat_conf1 = [[TN, FP], [FN, TP]]
@@ -396,10 +408,12 @@ def encode(file):
     rapel = TP / (TP + FN)
     output_string += 'Rapel_t = ' + "{:.1f}".format(rapel) + "\n"
 
-    scorF1 = (2 * precizie * rapel) / (precizie + rapel)
+    if precizie + rapel == 0:
+        scorF1 = 0
+    else:
+        scorF1 = (2 * precizie * rapel) / (precizie + rapel)
     output_string += 'ScorF1_t = ' + "{:.1f}".format(scorF1) + "\n"
 
     mat_conf2 = [[TN, FP], [FN, TP]]
-    output_string += 'Matricea = ' + str(mat_conf2)
 
     return output_string

@@ -1,0 +1,11 @@
+Acuratete_v = 0.6
+Precizie_v = 0.4
+Rapel_v = 0.9
+ScorF1_v = 0.5
+Matricea = [[91, 70], [6, 40]]
+
+Acuratete_t = 0.8
+Precizie_t = 0.0
+Rapel_t = 0.0
+ScorF1_t = 0.0
+Matricea = [[49, 3], [7, 0]]
